@@ -1,15 +1,11 @@
 package ru.kpfu.itis.group400.amirova.server.game;
 
-import ru.kpfu.itis.group400.amirova.exception.GameException;
 import ru.kpfu.itis.group400.amirova.server.game.model.GameSetupResult;
-import ru.kpfu.itis.group400.amirova.server.game.model.PlayerRoundState;
 import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.StartRoom;
 import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckRooms;
 import ru.kpfu.itis.group400.amirova.server.game.model.players.Player;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class GameSetupManager {
     private List<Player> players;

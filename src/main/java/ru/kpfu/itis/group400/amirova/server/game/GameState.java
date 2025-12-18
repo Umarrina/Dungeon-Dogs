@@ -28,7 +28,6 @@ public class GameState {
     private List<Position> availablePositions;
 
     private Player currentPlayer;
-
     // первичная инициализация
     public GameState(List<Player> players, StartRoom startRoom, DeckRooms deckRooms,  DeckPotions deckPotions, DeckQuests deckQuests) {
         maxRound = 3;
@@ -61,9 +60,40 @@ public class GameState {
         }
     }
 
+    public void addPlacesRooms (Room room, Position position) {
+        placesRooms.put(position, room);
+    }
+
+    public boolean placeCard(Room placedCard, Position position) {
+        if (placesRooms.containsKey(position)) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean canDrawCard() {
+        if (cardsAvailable > 0 && deckRooms.hasNextCard()) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean allPlayersFinished() {
+        for (Player player : players) {
+            if (!player.getPlayerRoundState().isHasExit() && !player.getPlayerRoundState().isSlept()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public List<Position> getAvailablePositions(Room room) {
         initializeAvailablePosition(room);
         return availablePositions;
+    }
+
+    public void resetDeckLimit() {
+        cardsAvailable = Integer.MAX_VALUE;
     }
 
     public Room getFirstCard() {
@@ -76,5 +106,77 @@ public class GameState {
 
     public void setCurrentPlayer(Player currentPlayer) {
         this.currentPlayer = currentPlayer;
+    }
+
+    public int getRound() {
+        return round;
+    }
+
+    public void setMaxRound(int maxRound) {
+        this.maxRound = maxRound;
+    }
+
+    public List<Player> getPlayers() {
+        return players;
+    }
+
+    public void setPlayers(List<Player> players) {
+        this.players = players;
+    }
+
+    public StartRoom getStartRoom() {
+        return startRoom;
+    }
+
+    public void setStartRoom(StartRoom startRoom) {
+        this.startRoom = startRoom;
+    }
+
+    public DeckRooms getDeckRooms() {
+        return deckRooms;
+    }
+
+    public void setDeckRooms(DeckRooms deckRooms) {
+        this.deckRooms = deckRooms;
+    }
+
+    public int getCardsAvailable() {
+        return cardsAvailable;
+    }
+
+    public void setCardsAvailable(int cardsAvailable) {
+        this.cardsAvailable = cardsAvailable;
+    }
+
+    public DeckPotions getDeckPotions() {
+        return deckPotions;
+    }
+
+    public void setDeckPotions(DeckPotions deckPotions) {
+        this.deckPotions = deckPotions;
+    }
+
+    public DeckQuests getDeckQuests() {
+        return deckQuests;
+    }
+
+    public void setDeckQuests(DeckQuests deckQuests) {
+        this.deckQuests = deckQuests;
+    }
+
+    public Map<Position, Room> getPlacesRooms() {
+        return placesRooms;
+    }
+
+    public void setPlacesRooms(Map<Position, Room> placesRooms) {
+        this.placesRooms = placesRooms;
+    }
+
+    public List<Position> getAvailablePositions() {
+        return availablePositions;
+    }
+
+    public void setAvailablePositions(List<Position> availablePositions) {
+        this.availablePositions = availablePositions;
     }
 }
