@@ -26,6 +26,14 @@ public class PlayerRoundState {
         this.exitPath = new ArrayList<Room>();
     }
 
+    public PlayerRoundState(int initialTokens, int initialHealth) {
+        this.currentTokens = initialTokens;
+        this.currentHealth = initialHealth;
+        this.hasExit = false;
+        this.isSlept = false;
+        this.exitPath = new ArrayList<>();
+    }
+
     public void setHasExit(boolean hasExit) {
         this.hasExit = hasExit;
     }

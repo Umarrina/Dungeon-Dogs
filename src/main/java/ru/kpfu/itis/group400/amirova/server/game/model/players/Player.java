@@ -10,6 +10,7 @@ import ru.kpfu.itis.group400.amirova.server.game.model.dogs.Dog;
 import java.util.EnumMap;
 
 public class Player {
+    private int id;
     private String username;
     private Dog dog;
 
@@ -41,6 +42,14 @@ public class Player {
         }
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public void initTrophyDeck(DeckRooms additionalTrophyDeck) {
         if (trophyDeck == null) {
             trophyDeck = additionalTrophyDeck;
@@ -60,7 +69,7 @@ public class Player {
     }
 
     public void setPlayerRoundState() {
-        playerRoundState = new PlayerRoundState();
+        this.playerRoundState = new PlayerRoundState();
     }
 
     public PlayerRoundState getPlayerRoundState() {

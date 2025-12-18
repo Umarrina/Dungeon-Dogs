@@ -2,7 +2,6 @@ package ru.kpfu.itis.group400.amirova.server.game.model.decks;
 
 import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.base.Room;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class DeckRooms {
@@ -17,5 +16,9 @@ public class DeckRooms {
 
     public Room getFirstCard() {
         return rooms.remove(0);
+    }
+
+    public boolean hasNextCard() {
+        return !rooms.isEmpty();
     }
 }

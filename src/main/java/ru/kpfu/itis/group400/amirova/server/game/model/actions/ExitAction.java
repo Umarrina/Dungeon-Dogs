@@ -10,7 +10,7 @@ import java.util.List;
 public class ExitAction extends PlayerAction {
     private List<Room> exitPath;
 
-    public ExitAction(Player player, List<Room> exitPath) {
+    public ExitAction(Player player) {
         super(player, ActionType.EXIT_DUNGEON);
         this.exitPath = exitPath;
     }
