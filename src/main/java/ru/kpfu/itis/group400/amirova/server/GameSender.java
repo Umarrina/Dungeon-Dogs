@@ -7,17 +7,26 @@ import ru.kpfu.itis.group400.amirova.server.game.model.players.Player;
 import java.util.List;
 import java.util.Map;
 
-public class GameNotifier {
+public class GameSender {
     private GameServer gameServer;
     private GameSerializer serializer;
 
-    public GameNotifier(GameServer gameServer) {
+    public GameSender(GameServer gameServer) {
         this.gameServer = gameServer;
         this.serializer = new GameSerializer();
     }
 
+    public GameSender() {
+
+    }
+
     public void sendActionRequest(Player player, String actionType) {
         String message = "SERVER_COMMAND|" + actionType;
+        gameServer.sendToPlayer(player, message);
+    }
+
+    public void sendAvailablePositions(Player player,  List<Position> availablePositions) {
+        String message = "AVAILABLE_POSITION|" + serializer.serializePositions(availablePositions);
         gameServer.sendToPlayer(player, message);
     }
 
@@ -27,6 +36,10 @@ public class GameNotifier {
 
     public void broadcast(String message) {
         gameServer.broadcastToAll("BROADCAST|" + message);
+    }
+
+    public void sendToPlayer(Player player, String message) {
+        gameServer.sendToPlayer(player, message);
     }
 
     public void notifyExplore(Player player, Room room, List<Position> availablePositions) {
