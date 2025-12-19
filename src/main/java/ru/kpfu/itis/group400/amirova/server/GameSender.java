@@ -19,9 +19,9 @@ public class GameSender {
         sendToPlayer(player, message);
     }
 
-    public void notifyCardPlaced(Player player, int cardId, Position position) {
+    public void notifyCardPlaced(Player player, int cardId, Position position, int rotation) {
         String pos = position.getX() + "," + position.getY();
-        broadcast("CARD_PLACED|" + player.getUsername() + "|" + pos + "|" + cardId);
+        broadcast("CARD_PLACED|" + player.getUsername() + "|" + pos + "|" + cardId +  "|" + rotation);
     }
 
     public void sendAvailablePositions(Player player, List<Position> positions) {

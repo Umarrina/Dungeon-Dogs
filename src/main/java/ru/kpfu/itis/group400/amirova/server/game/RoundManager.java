@@ -83,14 +83,15 @@ public class RoundManager {
             for (Player player : players) {
                 PlayerRoundState state = player.getPlayerRoundState();
 
+                // Пропускаем игроков, которые вышли или спят
                 if (state.isSlept() || state.isHasExit()) {
-                    if (state.isHasExit()) {
-                        notifier.sendToPlayer(player, "ROUND_EXITED|" + player.getUsername());
-                    } else if (state.isSlept()) {
-                        notifier.sendToPlayer(player, "ROUND_SLEPT|" + player.getUsername());
-                    }
+                    System.out.println("Пропускаем игрока " + player.getUsername() +
+                            " (спит: " + state.isSlept() +
+                            ", вышел: " + state.isHasExit() + ")");
                     continue;
                 }
+
+                System.out.println("=== ХОД ИГРОКА: " + player.getUsername() + " ===");
 
                 notifier.notifyCurrentPlayer(player);
                 notifier.sendActionRequest(player, "YOUR_TURN");
@@ -101,10 +102,22 @@ public class RoundManager {
                     }
                 }
 
+                // Ждем первое действие игрока
                 String response = handler.waitResponse(player);
 
                 if (response != null) {
+                    System.out.println("Получено от " + player.getUsername() + ": " + response);
                     handlePlayerAction(player, response);
+
+                    // После обработки действия проверяем, не вышел ли игрок или не уснул
+                    if (state.isHasExit() || state.isSlept()) {
+                        System.out.println("Игрок " + player.getUsername() + " завершил ход");
+                        continue; // Переходим к следующему игроку
+                    }
+
+                    // Если игрок все еще активен, продолжаем ждать от него действия
+                    // (это важно для многошаговых действий)
+                    System.out.println("Игрок " + player.getUsername() + " все еще в игре, продолжаем ход");
                 }
 
                 if (countActivePlayers() == 0) {
@@ -160,7 +173,7 @@ public class RoundManager {
 
             case "REQUEST_EXIT":
                 handleRequestExit(player);
-                break;
+                return;
 
             case "EXIT":
                 if (parts.length < 3) {
@@ -249,9 +262,15 @@ public class RoundManager {
         }
     }
 
-    private void handleRequestExit(Player player) {
+    private void handleRequestExit(Player player) throws InterruptedException {
         if (player.hasCard()) {
             notifier.sendError(player, "Нельзя выходить с картой на руке");
+            return;
+        }
+
+        PlayerRoundState state = player.getPlayerRoundState();
+        if (state.isHasExit() || state.isSlept()) {
+            notifier.sendError(player, "Игрок уже вышел или спит");
             return;
         }
 
@@ -259,10 +278,48 @@ public class RoundManager {
         if (exits.isEmpty()) {
             notifier.sendError(player, "Нет доступных выходов из подземелья");
         } else {
+            // Отправляем выходы игроку
             notifier.sendToPlayer(player, "START_EXIT_PATH|" +
                     exits.stream()
                             .map(p -> p.getX() + "," + p.getY())
                             .collect(Collectors.joining(";")));
+
+            // ВАЖНО: теперь ждем, пока игрок не отправит путь выхода
+            boolean exitHandled = false;
+            while (!exitHandled) {
+                String response = handler.waitResponse(player);
+                System.out.println("Ожидание пути выхода от " + player.getUsername() + ": " + response);
+
+                if (response == null || !response.startsWith("ACTION|")) {
+                    continue;
+                }
+
+                String[] exitParts = response.split("\\|");
+                String exitAction = exitParts[1];
+
+                if ("EXIT".equals(exitAction)) {
+                    // Получаем путь из третьей части
+                    String pathData = exitParts.length > 2 ? exitParts[2] : "";
+
+                    if (gameEngine.processExit(player, parsePathData(pathData))) {
+                        int coins = player.getTotalCoins();
+                        notifier.sendToPlayer(player, "EXIT_SUCCESS|" + coins);
+                        notifier.notifyPlayerExit(player, coins);
+                        exitHandled = true;
+                    } else {
+                        notifier.sendError(player, "Неверный путь для выхода");
+                        // Продолжаем ждать
+                    }
+                } else if ("CANCEL_EXIT".equals(exitAction)) {
+                    // Игрок отменил выход
+                    notifier.sendToPlayer(player, "EXIT_CANCELLED");
+                    notifier.sendToPlayer(player, "SERVER_COMMAND|YOUR_TURN");
+                    exitHandled = true;
+                } else {
+                    // Игрок попытался сделать другое действие
+                    notifier.sendError(player, "Закончите выбор пути выхода или отмените его");
+                }
+            }
         }
     }
 
@@ -292,13 +349,25 @@ public class RoundManager {
             return;
         }
 
-        Position position = gameSerializer.deserializePositions(posData);
+        // 🔥 ПАРСИМ поворот из клиента
+        String[] placeData = posData.split("\\|");
+        String posStr = placeData[0];  // "1,0"
+        int rotation = placeData.length > 1 ? Integer.parseInt(placeData[1]) : 0;  // 90!
+
+        Position position = gameSerializer.deserializePositions(posStr);
         if (gameEngine.canPlace(player, position)) {
             gameEngine.processPlaceCard(player, position);
+
+            // 🔥 BROADCAST С ПОВОРОТОМ!
+            String broadcastMsg = "BROADCAST|CARD_PLACED|" + player.getUsername() + "|" + posStr + "|" + player.getCurrentRoomId() + "|" + rotation;
+            notifier.broadcast(broadcastMsg);
+            System.out.println("🔥 BROADCAST С ПОВОРОТОМ: " + broadcastMsg);
         } else {
             notifier.sendError(player, "Неверная позиция для размещения");
         }
     }
+
+
 
     private List<Position> parsePathData(String pathData) {
         List<Position> path = new ArrayList<>();

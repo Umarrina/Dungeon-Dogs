@@ -31,28 +31,37 @@ public class GameServer {
 
     public static void main(String[] args) {
         GameServer server = new GameServer();
-        server.start();
+
+        int maxPlayers = 2;
+        String host = "localhost";
+        int port = 5555;
+
+        if (args.length >= 1) port = Integer.parseInt(args[0]);
+        if (args.length >= 2) host = args[1];
+        if (args.length >= 3) maxPlayers = Integer.parseInt(args[2]);
+
+        System.out.println("Сервер: " + host + ":" + port + " (макс. игроков: " + maxPlayers + ")");
+        server.start(host, port, maxPlayers);
     }
 
-    private void start() {
+    public void start(String host, int port, int maxPlayers) {
         try {
-            socket = new ServerSocket(5555);
+            socket = new ServerSocket(port);
+            System.out.println("Сервер запущен на " + host + ":" + port);
 
-            while (clientHandlers.size() < 2) {
+            while (clientHandlers.size() < maxPlayers) {
                 Socket clientSocket = socket.accept();
-
                 ClientHandler handler = new ClientHandler(clientSocket, this);
                 clientHandlers.add(handler);
                 new Thread(handler).start();
             }
 
             socket.close();
-
             initializeGameComponents();
             startGameProcess();
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.err.println("Ошибка сервера: " + e.getMessage());
         }
     }
 

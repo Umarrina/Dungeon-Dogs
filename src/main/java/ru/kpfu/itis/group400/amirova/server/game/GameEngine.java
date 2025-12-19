@@ -116,7 +116,7 @@ public class GameEngine {
 
         player.setCurrentRoomId(null);
 
-        notifier.notifyCardPlaced(player, cardId, position);
+        notifier.notifyCardPlaced(player, cardId, position, card.getRotation());
     }
 
     public boolean processExit(Player player, List<Position> path) {
