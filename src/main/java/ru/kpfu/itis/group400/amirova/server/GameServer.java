@@ -1,8 +1,10 @@
 package ru.kpfu.itis.group400.amirova.server;
 
 import ru.kpfu.itis.group400.amirova.server.game.GameEngine;
+import ru.kpfu.itis.group400.amirova.server.game.GameInitializer;
 import ru.kpfu.itis.group400.amirova.server.game.RoundManager;
 import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckRooms;
+import ru.kpfu.itis.group400.amirova.server.game.model.dogs.Dog;
 import ru.kpfu.itis.group400.amirova.server.game.model.players.Player;
 
 import java.io.BufferedReader;
@@ -22,7 +24,6 @@ public class GameServer {
     private MessageHandler handler;
     private GameSender notifier;
 
-    private boolean gameStarted = false;
     private List<ClientHandler> clientHandlers = new ArrayList<>();
     private List<Player> players = new  ArrayList<>();
     private ServerSocket socket;
@@ -35,8 +36,9 @@ public class GameServer {
 
     private void start() {
         try {
-            socket = new  ServerSocket(5555);
-            while (clientHandlers.size() < 4) {
+            socket = new ServerSocket(5555);
+
+            while (clientHandlers.size() < 2) {
                 Socket clientSocket = socket.accept();
 
                 ClientHandler handler = new ClientHandler(clientSocket, this);
@@ -44,36 +46,51 @@ public class GameServer {
                 new Thread(handler).start();
             }
 
-            Thread.sleep(2000);
-
             socket.close();
 
             initializeGameComponents();
             startGameProcess();
 
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private void initializeGameComponents() {
-        //todo
-        DeckRooms deckRooms = new DeckRooms();
+        try {
+            GameInitializer initializer = new GameInitializer();
+            initializer.initializeAll();
+            DeckRooms deckRooms = initializer.getDeckRooms();
+            List<Dog> dogs = initializer.getDogs();
 
-        this.gameEngine = new GameEngine(players, this);
-        this.handler = new MessageHandler();
-        this.notifier = new GameSender(this);
-        this.roundManager = new RoundManager(deckRooms, players, gameEngine, handler, notifier);
+            for (Player p : players) {
+                if (p.getDog() == null) {
+                    int index = players.indexOf(p) % dogs.size();
+                    p.setDog(dogs.get(index));
+                }
+                p.setPlayerRoundState();
+                p.getPlayerRoundState().setCurrentTokens(5);
+                p.getPlayerRoundState().setCurrentHealth(p.getDog().getMaxHealth());
+            }
 
-        for(Player p : players) {
-            handler.registerPlayer(p);
+            this.gameEngine = new GameEngine(players, this);
+            this.handler = new MessageHandler();
+            this.notifier = new GameSender(this);
+            this.roundManager = new RoundManager(deckRooms, players, gameEngine, handler, notifier);
+
+            for(Player p : players) {
+                handler.registerPlayer(p);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            broadcastToAll("ERROR|Ошибка инициализации игры: " + e.getMessage());
         }
     }
 
     public synchronized void addPlayer(Player player, ClientHandler clientHandler) {
         players.add(player);
         playerToHandler.put(player, clientHandler);
-        System.out.println("Игрок " + player.getUsername() + " подключен. Всего игроков: " + players.size());
     }
 
     public void handleClientMessage(Player player, String message) {
@@ -98,10 +115,6 @@ public class GameServer {
                 handler.out.println(message);
             }
         }
-    }
-
-    public List<Player> getAllConnectedPlayers() {
-        return new ArrayList<>(players);
     }
 
     private class ClientHandler implements Runnable {
@@ -136,7 +149,8 @@ public class GameServer {
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.out.println("Ошибка соединения с игроком " +
+                        (player != null ? player.getUsername() : "unknown"));
             }
         }
     }
