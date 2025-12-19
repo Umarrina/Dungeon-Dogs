@@ -1,16 +1,19 @@
 package ru.kpfu.itis.group400.amirova.server.game;
 
-import ru.kpfu.itis.group400.amirova.exception.GameException;
 import ru.kpfu.itis.group400.amirova.server.game.model.DamageType;
-import ru.kpfu.itis.group400.amirova.server.game.model.PlayerRoundState;
+import ru.kpfu.itis.group400.amirova.server.game.model.cards.factory.CardFactory;
 import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.StartRoom;
-import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckPotions;
-import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckQuests;
+import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.base.EventType;
+import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.base.Room;
 import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckRooms;
 import ru.kpfu.itis.group400.amirova.server.game.model.dogs.Dog;
 import ru.kpfu.itis.group400.amirova.server.game.model.dogs.GradeType;
 import ru.kpfu.itis.group400.amirova.server.game.model.players.Player;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -18,21 +21,19 @@ import java.util.List;
 public class GameInitializer {
 
     private DeckRooms deckRooms;
-    private DeckPotions deckPotions;
-    private DeckQuests deckQuests;
     private List<Dog> dogs;
+    private StartRoom startRoom;
 
     public GameInitializer() {
         deckRooms = new DeckRooms();
-        deckPotions = new DeckPotions();
-        deckQuests = new DeckQuests();
         dogs = new ArrayList<>();
     }
 
     public void initializeAll() {
-        createDogs();
-        createRooms();
-
+        if (deckRooms.getRoomCount() == 0) {
+            createDogs();
+            loadCardsFromCSV();
+        }
     }
 
     private void createDogs() {
@@ -62,29 +63,30 @@ public class GameInitializer {
         dogs.add(dog4);
     }
 
-    private void createRooms() {
-        createDogs();
-        createStartRoom();
-        createEnemyRooms();
-        createCoinRooms();
-        createArtifactRooms();
+    private void loadCardsFromCSV() {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                getClass().getResourceAsStream("/configuration.csv")))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(";");
+                try {
+                    Room room = CardFactory.createRoomFromCSV(parts);
+
+                    if (room.getEventType() == EventType.START) {
+                        startRoom = (StartRoom) room;
+                    } else {
+                        deckRooms.add(room);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка при создании карты из строки: " + line);
+                    e.printStackTrace();
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Ошибка при чтении CSV файла: " + e.getMessage());
+        }
     }
 
-    private void createEnemyRooms() {
-
-    }
-
-    private void createCoinRooms() {
-
-    }
-
-    private void createStartRoom() {
-
-    }
-
-    private void createArtifactRooms() {
-
-    }
 
     public List<Dog> getDogs() {
         return dogs;
@@ -94,14 +96,8 @@ public class GameInitializer {
         return deckRooms;
     }
 
-    public void initializePlayersField(List<Player> players) {
-        for (Player player : players) {
-            player.setMaxTokens(5);
-            player.setPlayerRoundState();
-
-            player.getPlayerRoundState().setCurrentTokens(player.getMaxTokens());
-            player.getPlayerRoundState().setCurrentHealth(player.getDog().getMaxHealth());
-        }
+    public StartRoom getStartRoom() {
+        return startRoom;
     }
 
     public void firstInitializePlayersField(List<Player> players) {
@@ -114,20 +110,5 @@ public class GameInitializer {
 
             player.initTrophyDeck(new DeckRooms());
         }
-    }
-
-    public StartRoom initializeStartRoom(List<Player> players) {
-        int countPlayers = players.size();
-        if (countPlayers == 2) {
-            return new StartRoom(3);
-        }  else if (countPlayers == 3 ||  countPlayers == 4) {
-            return new StartRoom(4);
-        } else {
-            throw new GameException("Invalid number of players");
-        }
-    }
-
-    public DeckRooms initializeDeckRooms() {
-        return deckRooms;
     }
 }

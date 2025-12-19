@@ -17,23 +17,19 @@ public class GameSetupManager {
     }
 
     public GameSetupResult setupGame() {
-        // пока рандом только
-        // TODO сделать не рандом
         gameInitializer.initializeAll();
+
         for (int i = 0; i < players.size(); i++) {
             players.get(i).setDog(gameInitializer.getDogs().get(i));
             players.get(i).setPlayerRoundState();
         }
 
-        gameInitializer.initializePlayersField(players);
-        // TODO разадача карт квестов
-        // TODO Раздача зелий
+        gameInitializer.firstInitializePlayersField(players);
 
-        StartRoom startRoom = gameInitializer.initializeStartRoom(players);
+        StartRoom startRoom = gameInitializer.getStartRoom();
+        DeckRooms deckRooms = gameInitializer.getDeckRooms();
 
-        DeckRooms deckRooms = gameInitializer.initializeDeckRooms();
-
-        return new GameSetupResult(players,  startRoom, deckRooms);
+        return new GameSetupResult(players, startRoom, deckRooms);
     }
 
 
