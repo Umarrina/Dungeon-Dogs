@@ -15,10 +15,6 @@ public class Dog {
 
     private int maxHealth;
 
-
-    // конструктор, который нужен для первичной инициализации собаки для игрока
-
-
     public Dog(String name, GradeType grade, String ability, String description,
                EnumMap<DamageType, Integer> damage, int maxHealth) {
         this.name = name;
@@ -29,28 +25,8 @@ public class Dog {
         this.maxHealth = maxHealth;
     }
 
-    public void addMaxHealth(int amount) {
-        maxHealth += amount;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public GradeType getGrade() {
-        return grade;
-    }
-
-    public String getAbility() {
-        return ability;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public EnumMap<DamageType, Integer> getDamage() {
-        return damage;
     }
 
     public int getMaxHealth() {
