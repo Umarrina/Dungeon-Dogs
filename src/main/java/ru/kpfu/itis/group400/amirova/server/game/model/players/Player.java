@@ -1,31 +1,20 @@
 package ru.kpfu.itis.group400.amirova.server.game.model.players;
 
-import ru.kpfu.itis.group400.amirova.server.game.model.DamageType;
 import ru.kpfu.itis.group400.amirova.server.game.model.PlayerRoundState;
-import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.base.Room;
-import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckPotions;
 import ru.kpfu.itis.group400.amirova.server.game.model.decks.DeckRooms;
 import ru.kpfu.itis.group400.amirova.server.game.model.dogs.Dog;
 
-import java.util.EnumMap;
 
 public class Player {
-    private int id;
     private String username;
     private Dog dog;
 
     private int totalCoins;
     private int maxTokens;
     private DeckRooms trophyDeck;
-    private DeckPotions deckPotions;
-
-    private EnumMap<DamageType, Integer> additionalDamage;
 
     private PlayerRoundState playerRoundState;
 
-    // TODO классы колода-квесты и колода-зелья
-
-    // Первичная инициализация при регистрации
     public Player(String username) {
         this.username = username;
     }
@@ -42,22 +31,12 @@ public class Player {
         }
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public void initTrophyDeck(DeckRooms additionalTrophyDeck) {
         if (trophyDeck == null) {
             trophyDeck = additionalTrophyDeck;
         } else {
             trophyDeck.add(additionalTrophyDeck);
         }
-
-        // TODO сделать здесь подсчет добавленного уроно исзодя из трофеев
     }
 
     public void setMaxTokens(int maxTokens) {
@@ -65,7 +44,7 @@ public class Player {
     }
 
     public void addMaxTokens(int additionalMaxTokens) {
-        this.maxTokens += maxTokens;
+        this.maxTokens += additionalMaxTokens;
     }
 
     public void setPlayerRoundState() {
@@ -92,19 +71,15 @@ public class Player {
         return maxTokens;
     }
 
-    public DeckRooms getTrophyDeck() {
-        return trophyDeck;
+    public Integer getCurrentRoomId() {
+        return playerRoundState.getCurrentRoomId();
     }
 
-    public DeckPotions getDeckPotions() {
-        return deckPotions;
+    public void setCurrentRoomId(Integer roomId) {
+        playerRoundState.setCurrentRoomId(roomId);
     }
 
-    public EnumMap<DamageType, Integer> getAdditionalDamage() {
-        return additionalDamage;
-    }
-
-    public Room getCurrentCard() {
-        return playerRoundState.getCurrentRoom();
+    public boolean hasCard() {
+        return playerRoundState.getCurrentRoomId() != null;
     }
 }
