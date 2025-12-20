@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import ru.kpfu.itis.group400.amirova.client.ui.GameUI;
+import ru.kpfu.itis.group400.amirova.io.ConfigurationReader;
 import ru.kpfu.itis.group400.amirova.server.game.model.Position;
 
 import java.io.BufferedReader;
@@ -78,55 +79,49 @@ public class GameClient extends Application {
     }
 
     private void loadCardCache() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream("/configuration.csv")))) {
-            String line;
-            int lineNum = 0;
-            while ((line = br.readLine()) != null) {
-                lineNum++;
-                String[] parts = line.split(";");
-                if (parts.length >= 4) {
-                    try {
-                        int cardId = Integer.parseInt(parts[0].trim());
-                        String cardName = parts[1].trim();
-                        String exitsStr = parts[2].trim();
-                        String eventType = parts[3].trim();
+        ConfigurationReader reader = new ConfigurationReader();
+        List<String> lines = reader.loadAllLines();
+        for (String line : lines) {
+            String[] parts = line.split(";");
+            if (parts.length >= 4) {
+                try {
+                    int cardId = Integer.parseInt(parts[0].trim());
+                    String cardName = parts[1].trim();
+                    String exitsStr = parts[2].trim();
+                    String eventType = parts[3].trim();
 
-                        cardInfoCache.put(cardId, cardName);
-                        cardTypeCache.put(cardId, eventType);
-                        cardExitsCache.put(cardId, exitsStr);
+                    cardInfoCache.put(cardId, cardName);
+                    cardTypeCache.put(cardId, eventType);
+                    cardExitsCache.put(cardId, exitsStr);
 
-                        StringBuilder details = new StringBuilder();
-                        details.append("ID: ").append(cardId).append("\n");
-                        details.append("Название: ").append(cardName).append("\n");
-                        details.append("Тип: ").append(eventType).append("\n");
+                    StringBuilder details = new StringBuilder();
+                    details.append("ID: ").append(cardId).append("\n");
+                    details.append("Название: ").append(cardName).append("\n");
+                    details.append("Тип: ").append(eventType).append("\n");
 
-                        if ("ENEMY".equals(eventType) && parts.length >= 12) {
-                            String requiredDamage = parts[8];
-                            String damage = parts[9];
-                            String trophy = parts[10];
-                            String coins = parts[11];
-                            details.append("Требуется: ").append(requiredDamage).append("\n");
-                            details.append("Урон: ").append(damage).append("\n");
-                            details.append("Трофей: ").append(trophy).append("\n");
-                            details.append("Монеты: ").append(coins).append("\n");
-                        } else if ("COIN".equals(eventType) && parts.length >= 9) {
-                            String coinCount = parts[8];
-                            details.append("Монеты: ").append(coinCount).append("\n");
-                        } else if ("ARTIFACT".equals(eventType) && parts.length >= 9) {
-                            String artifactBonus = parts[8];
-                            details.append("Бонус: ").append(artifactBonus).append("\n");
-                        }
-
-                        cardDetailsCache.put(cardId, details.toString());
-
-                    } catch (NumberFormatException e) {
-                        System.err.println("Ошибка в строке " + lineNum + ": " + line);
+                    if ("ENEMY".equals(eventType) && parts.length >= 12) {
+                        String requiredDamage = parts[8];
+                        String damage = parts[9];
+                        String trophy = parts[10];
+                        String coins = parts[11];
+                        details.append("Требуется: ").append(requiredDamage).append("\n");
+                        details.append("Урон: ").append(damage).append("\n");
+                        details.append("Трофей: ").append(trophy).append("\n");
+                        details.append("Монеты: ").append(coins).append("\n");
+                    } else if ("COIN".equals(eventType) && parts.length >= 9) {
+                        String coinCount = parts[8];
+                        details.append("Монеты: ").append(coinCount).append("\n");
+                    } else if ("ARTIFACT".equals(eventType) && parts.length >= 9) {
+                        String artifactBonus = parts[8];
+                        details.append("Бонус: ").append(artifactBonus).append("\n");
                     }
+
+                    cardDetailsCache.put(cardId, details.toString());
+
+                } catch (NumberFormatException e) {
+                    System.err.println("Ошибка в строке " + line);
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Ошибка загрузки карт: " + e.getMessage());
         }
     }
 
@@ -226,7 +221,7 @@ public class GameClient extends Application {
     }
 
     private void handleServerMessage(String message) {
-        System.out.println("📨 ПОЛУЧЕНО ОТ СЕРВЕРА: '" + message);
+        System.out.println("ПОЛУЧЕНО ОТ СЕРВЕРА: '" + message);
         String[] parts = message.split("\\|");
         if (parts.length == 0) return;
 
@@ -273,17 +268,18 @@ public class GameClient extends Application {
                 if (parts.length >= 2) {
                     switch (parts[1]) {
                         case "CARD_PLACED":
-                            String playerName = parts[2];                 // Игрок "1"
-                            Position position = parsePosition(parts[3]);  // Позиция "-1,0"
-                            int cardIdInt = Integer.parseInt(parts[4]);   // Карта "47"
+                            String playerName = parts[2];
+                            Position position = parsePosition(parts[3]);
+                            int cardIdInt = Integer.parseInt(parts[4]);
                             int rotation = parts.length >= 6 ? Integer.parseInt(parts[5]) : 0;
 
                             String cardName = cardInfoCache.getOrDefault(cardIdInt, "Карта " + parts[4]);
                             String cardType = cardTypeCache.getOrDefault(cardIdInt, "room");
                             String exits = cardExitsCache.getOrDefault(cardIdInt, "1:1:1:1");
 
+                            // Пропускаем свою карту!
                             if (playerName.equals(username)) {
-                                System.out.println("⏭Пропускаем свою карту");
+                                System.out.println("Пропускаем свою карту");
                                 return;
                             }
 
@@ -299,9 +295,8 @@ public class GameClient extends Application {
                             if (parts.length >= 2) {
                                 gameUI.addLog("Раунд " + parts[1] + " начался");
                                 gameUI.clearBoard();
-                                // Очищаем статистику только в начале первого раунда
                                 if ("1".equals(parts[1])) {
-                                    gameUI.clearPlayersStats(); // Очищаем панель
+                                    gameUI.clearPlayersStats();
                                 }
                             }
                             break;
@@ -339,12 +334,10 @@ public class GameClient extends Application {
                     String coins = parts[2];
 
                     if (playerName.equals(username)) {
-                        // Это мы вышли
                         gameUI.addLog("Вы вышли из подземелья с " + coins + " монетами!");
                         gameUI.disableAllButtons();
                         gameUI.cancelExitPathSelection();
                     } else {
-                        // Другой игрок вышел
                         gameUI.addLog("Игрок " + playerName + " вышел с " + coins + " монетами");
                     }
                 }
@@ -392,6 +385,20 @@ public class GameClient extends Application {
                 gameUI.disableAllButtons();
                 break;
 
+            case "ROUND_RESET":
+                Platform.runLater(() -> {
+                    gameUI.setButtonsEnabled(false);
+                    gameUI.enableRotateButton(false);
+                    gameUI.enablePlaceButton(false);
+                    gameUI.resetSelection();
+                    gameUI.clearAvailablePositions();
+                    if (gameUI.isSelectingExitPath()) {
+                        gameUI.cancelExitPathSelection();
+                    }
+                    gameUI.addLog("Новый раунд начался. Ожидайте своего хода.");
+                });
+                break;
+
             default:
                 System.out.println("Неизвестная команда: " + command);
         }
@@ -409,8 +416,6 @@ public class GameClient extends Application {
             return;
         }
 
-        // Проверяем, что путь заканчивается на выходе
-        Position lastPos = path.get(path.size() - 1);
         boolean isExit = gameUI.isExitPathComplete();
 
         if (!isExit) {
@@ -427,9 +432,8 @@ public class GameClient extends Application {
         }
 
         gameUI.addLog("Отправка пути выхода на сервер...");
-        sendAction("EXIT|" + pathData.toString());
+        sendAction("EXIT|" + pathData);
 
-        // Отключаем кнопку подтверждения выхода после отправки
         gameUI.confirmExitButton.setDisable(true);
         gameUI.addLog("Путь отправлен. Ожидайте подтверждения от сервера...");
     }
@@ -443,10 +447,10 @@ public class GameClient extends Application {
             gameUI.setButtonsEnabled(true);
             gameUI.enableRotateButton(false);
             gameUI.enablePlaceButton(false);
-            gameUI.resetSelection(); // ЯВНЫЙ СБРОС
+            gameUI.resetSelection();
         } else {
             gameUI.disableAllButtons();
-            gameUI.resetSelection(); // ЯВНЫЙ СБРОС для других игроков
+            gameUI.resetSelection();
         }
     }
 
@@ -482,22 +486,6 @@ public class GameClient extends Application {
             gameUI.sleepButton.setDisable(true);
             gameUI.exitButton.setDisable(true);
         }
-    }
-
-
-    private String formatExits(String exitsStr) {
-        if (exitsStr == null || exitsStr.isEmpty()) return "";
-
-        String[] exitsArr = exitsStr.split(":");
-        if (exitsArr.length < 4) return exitsStr;
-
-        StringBuilder sb = new StringBuilder();
-        if ("1".equals(exitsArr[0])) sb.append("↑");
-        if ("1".equals(exitsArr[1])) sb.append("→");
-        if ("1".equals(exitsArr[2])) sb.append("↓");
-        if ("1".equals(exitsArr[3])) sb.append("←");
-
-        return sb.toString();
     }
 
     private List<Position> parsePositions(String positionsStr) {
@@ -641,7 +629,6 @@ public class GameClient extends Application {
 
     private void handleExitAction() {
         if (gameUI.isSelectingExitPath()) {
-            // Если уже выбираем путь, то отменяем
             sendAction("CANCEL_EXIT");
             gameUI.cancelExitPathSelection();
             gameUI.addLog("Выход отменен");
@@ -663,7 +650,7 @@ public class GameClient extends Application {
             Position pos = new Position(cell[0], cell[1]);
             gameUI.addCardToBoard(pos, cardName, cardType, exits, rotation);
 
-            gameUI.clearCurrentCard();
+            gameUI.setCurrentCard("");  // Очищаем руку
             sendAction("PLACE|" + cell[0] + "," + cell[1] + "|" + gameUI.getCurrentCardRotation());
             gameUI.clearSelection();
         }
@@ -686,7 +673,6 @@ public class GameClient extends Application {
             alert.showAndWait();
         });
     }
-
 
     @Override
     public void stop() {

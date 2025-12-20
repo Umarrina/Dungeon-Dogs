@@ -64,6 +64,10 @@ public class RoundManager {
         notifier.broadcast("ROUND_START|" + round);
 
         for (Player player : players) {
+            notifier.sendToPlayer(player, "SERVER_COMMAND|ROUND_RESET");
+        }
+
+        for (Player player : players) {
             PlayerRoundState state = player.getPlayerRoundState();
             state.setHasExit(false);
             state.setSlept(false);
@@ -143,14 +147,7 @@ public class RoundManager {
     }
 
     private void prepareBoardForNewRound() {
-        Map<Position, Integer> placedCards = new HashMap<>(gameState.getPlacedCards());
-        Position startPos = new Position(0, 0);
-
-        for (Map.Entry<Position, Integer> entry : placedCards.entrySet()) {
-            if (!entry.getKey().equals(startPos)) {
-                gameState.getPlacedCards().remove(entry.getKey());
-            }
-        }
+       gameState.clearBoardExceptStart();
     }
 
     private void handlePlayerAction(Player player, String response) throws InterruptedException {
@@ -278,13 +275,11 @@ public class RoundManager {
         if (exits.isEmpty()) {
             notifier.sendError(player, "Нет доступных выходов из подземелья");
         } else {
-            // Отправляем выходы игроку
             notifier.sendToPlayer(player, "START_EXIT_PATH|" +
                     exits.stream()
                             .map(p -> p.getX() + "," + p.getY())
                             .collect(Collectors.joining(";")));
 
-            // ВАЖНО: теперь ждем, пока игрок не отправит путь выхода
             boolean exitHandled = false;
             while (!exitHandled) {
                 String response = handler.waitResponse(player);
@@ -298,7 +293,6 @@ public class RoundManager {
                 String exitAction = exitParts[1];
 
                 if ("EXIT".equals(exitAction)) {
-                    // Получаем путь из третьей части
                     String pathData = exitParts.length > 2 ? exitParts[2] : "";
 
                     if (gameEngine.processExit(player, parsePathData(pathData))) {
@@ -308,15 +302,12 @@ public class RoundManager {
                         exitHandled = true;
                     } else {
                         notifier.sendError(player, "Неверный путь для выхода");
-                        // Продолжаем ждать
                     }
                 } else if ("CANCEL_EXIT".equals(exitAction)) {
-                    // Игрок отменил выход
                     notifier.sendToPlayer(player, "EXIT_CANCELLED");
                     notifier.sendToPlayer(player, "SERVER_COMMAND|YOUR_TURN");
                     exitHandled = true;
                 } else {
-                    // Игрок попытался сделать другое действие
                     notifier.sendError(player, "Закончите выбор пути выхода или отмените его");
                 }
             }
@@ -349,7 +340,6 @@ public class RoundManager {
             return;
         }
 
-        // 🔥 ПАРСИМ поворот из клиента
         String[] placeData = posData.split("\\|");
         String posStr = placeData[0];  // "1,0"
         int rotation = placeData.length > 1 ? Integer.parseInt(placeData[1]) : 0;  // 90!
@@ -358,10 +348,8 @@ public class RoundManager {
         if (gameEngine.canPlace(player, position)) {
             gameEngine.processPlaceCard(player, position);
 
-            // 🔥 BROADCAST С ПОВОРОТОМ!
             String broadcastMsg = "BROADCAST|CARD_PLACED|" + player.getUsername() + "|" + posStr + "|" + player.getCurrentRoomId() + "|" + rotation;
             notifier.broadcast(broadcastMsg);
-            System.out.println("🔥 BROADCAST С ПОВОРОТОМ: " + broadcastMsg);
         } else {
             notifier.sendError(player, "Неверная позиция для размещения");
         }

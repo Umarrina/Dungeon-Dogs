@@ -1,5 +1,6 @@
 package ru.kpfu.itis.group400.amirova.server.game;
 
+import ru.kpfu.itis.group400.amirova.io.ConfigurationReader;
 import ru.kpfu.itis.group400.amirova.server.game.model.DamageType;
 import ru.kpfu.itis.group400.amirova.server.game.model.cards.factory.CardFactory;
 import ru.kpfu.itis.group400.amirova.server.game.model.cards.rooms.StartRoom;
@@ -11,7 +12,6 @@ import ru.kpfu.itis.group400.amirova.server.game.model.dogs.GradeType;
 import ru.kpfu.itis.group400.amirova.server.game.model.players.Player;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -64,26 +64,22 @@ public class GameInitializer {
     }
 
     private void loadCardsFromCSV() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                getClass().getResourceAsStream("/configuration.csv")))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(";");
-                try {
-                    Room room = CardFactory.createRoomFromCSV(parts);
+        ConfigurationReader reader = new ConfigurationReader();
+        List<String> lines = reader.loadAllLines();
+        for (String line : lines) {
+        String[] parts = line.split(";");
+        try {
+            Room room = CardFactory.createRoomFromCSV(parts);
 
-                    if (room.getEventType() == EventType.START) {
-                        startRoom = (StartRoom) room;
-                    } else {
-                        deckRooms.add(room);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Ошибка при создании карты из строки: " + line);
-                    e.printStackTrace();
-                }
+            if (room.getEventType() == EventType.START) {
+                startRoom = (StartRoom) room;
+            } else {
+                deckRooms.add(room);
             }
-        } catch (IOException e) {
-            System.err.println("Ошибка при чтении CSV файла: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Ошибка при создании карты из строки: " + line);
+            e.printStackTrace();
+        }
         }
     }
 

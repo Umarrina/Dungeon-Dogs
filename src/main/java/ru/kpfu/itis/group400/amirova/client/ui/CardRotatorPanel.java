@@ -98,37 +98,25 @@ public class CardRotatorPanel extends Pane {
 
         g.setFont(Font.font("Arial", FontWeight.BOLD, 32));
 
-        if (hasExit[0]) { g.setFill(Color.LIME); g.fillText("↑",  -5, -20); }  // Верх
-        if (hasExit[1]) { g.setFill(Color.LIME); g.fillText("→",  20,  10); }  // Право
-        if (hasExit[2]) { g.setFill(Color.LIME); g.fillText("↓",  -5,  30); }  // Низ
-        if (hasExit[3]) { g.setFill(Color.LIME); g.fillText("←",  -40,  10); }  // Лево
+        if (hasExit[0]) { g.setFill(Color.LIME); g.fillText("↑",  -10, -20); }  // Верх
+        if (hasExit[1]) { g.setFill(Color.LIME); g.fillText("→",  20,  -10); }  // Право
+        if (hasExit[2]) { g.setFill(Color.LIME); g.fillText("↓",  -10,  30); }  // Низ
+        if (hasExit[3]) { g.setFill(Color.LIME); g.fillText("←",  -40,  -10); }  // Лево
+    }
+
+    private void drawEmptyCard() {
+        GraphicsContext g = canvas.getGraphicsContext2D();
+        g.clearRect(0, 0, 120, 160);
+        g.setFill(Color.GRAY.deriveColor(0, 1, 1, 0.3));
+        g.fillRoundRect(10, 20, 100, 140, 15, 15);
+        g.setFill(Color.WHITE);
+        g.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        g.fillText("КАРТА В РУКЕ", 20, 85);
     }
 
     private double lerpAngle(double from, double to, double t) {
         double diff = to - from;
         if (Math.abs(diff) > 180) diff += (diff > 0 ? -360 : 360);
         return from + diff * t;
-    }
-
-    public void clearCard() {
-        displayCardId = -1;
-        displayName = "";
-        currentExits = "1:1:1:1";
-        currentAngle = 0;
-        drawEmptyCard();
-    }
-
-    private void drawEmptyCard() {
-        GraphicsContext g = canvas.getGraphicsContext2D();
-        g.clearRect(0, 0, 150, 200);
-
-        g.setFill(Color.GRAY.deriveColor(0, 1, 1, 0.3));
-        g.fillRoundRect(25, 50, 100, 100, 12, 12);
-
-        g.setFill(Color.WHITE);
-        g.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        g.fillText("КАРТА В РУКЕ", 35, 105);
-        g.setFont(Font.font("Arial", 12));
-        g.fillText("Кликните для деталей", 28, 130);
     }
 }

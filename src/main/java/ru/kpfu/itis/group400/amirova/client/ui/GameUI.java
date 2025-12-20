@@ -3,7 +3,10 @@ package ru.kpfu.itis.group400.amirova.client.ui;
 import javafx.geometry.Insets;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -62,13 +65,6 @@ public class GameUI {
     private int currentCardId = -1;
     private String currentCardName = "";
     private int currentRotation = 0;
-
-    private String currentExits = "";
-    private Map<Integer, String> cardTypeCache;
-    private String name;
-
-    private Map<Position, Integer> boardCardIds = new HashMap<>();
-
 
     public GameUI() {
         createUI();
@@ -152,7 +148,7 @@ public class GameUI {
         panel.setPadding(new Insets(10));
         panel.setStyle("-fx-border-color: gray; -fx-border-width: 1; -fx-background-color: #e0e0e0;");
 
-        Label playerLabel = new Label("Статистика игроков");
+        Label playerLabel = new Label("Статистика игрока");
         playerLabel.setStyle("-fx-font-weight: bold;");
 
         playersStatsArea.setPrefSize(280, 600);
@@ -243,16 +239,6 @@ public class GameUI {
         selectedCellX = gameX;
         selectedCellY = gameY;
         drawBoard();
-
-        Position clickedPos = new Position(gameX, gameY);
-
-        if (boardCards.containsKey(clickedPos)) {
-            Integer cardId = boardCardIds.get(clickedPos);
-            String cardName = boardCards.get(clickedPos);
-            System.out.println("🖱️ КЛИК ПО КАРТЕ: " + cardName + " ID=" + cardId);
-            return;
-        }
-
         addLog("Клик: [" + gameX + ", " + gameY + "]");
 
         boolean isAvailable = availablePositions.stream()
@@ -583,22 +569,25 @@ public class GameUI {
                 .anyMatch(p -> p.getX() == x && p.getY() == y);
     }
 
-
-    public void clearCurrentCard() {
-        currentCardId = -1;
-        currentCardName = "";
-        currentExits = "";
-        currentRotation = 0;
-
-        handCardPreview.clearCard();
-        addLog("Рука очищена");
+    public void setCurrentCard(String cardInfo) {
+        currentCardRotation = 0;
+        currentCardArea.setText(cardInfo + "\nПоворот: 0°");
     }
 
     public void addCardToBoard(Position position, String cardName, String cardType, String exits, int rotation) {
+        System.out.println("addCardToBoard: " + position + " " + cardName + " поворот: " + rotation + "°");
+
+        if (boardCards.containsKey(position)) {
+            addLog("Позиция занята!");
+            return;
+        }
+
         boardCards.put(position, cardName);
         boardCardTypes.put(position, cardType);
         boardCardExits.put(position, exits);
         boardCardRotations.put(position, rotation);
+
+        System.out.println("✅ Карта добавлена с поворотом: " + rotation + "°");
 
         clearAvailablePositions();
         clearSelection();
@@ -607,7 +596,6 @@ public class GameUI {
         drawBoard();
         addLog("Карта '" + cardName + "' размещена на " + position);
     }
-
 
     public void clearBoard() {
         Position startPos = new Position(0, 0);
@@ -618,13 +606,11 @@ public class GameUI {
         boardCards.clear();
         boardCardTypes.clear();
         boardCardExits.clear();
-        boardCardIds.clear();
 
         if (startName != null) {
             boardCards.put(startPos, startName);
             boardCardTypes.put(startPos, startType);
             boardCardExits.put(startPos, startExits);
-            boardCardIds.put(startPos, 0);
         }
 
         clearAvailablePositions();
@@ -772,13 +758,9 @@ public class GameUI {
     public void setCurrentCard(int cardId, String name, String exits) {
         currentCardId = cardId;
         currentCardName = name;
-        currentExits = exits;
         currentRotation = 0;
-
-
         if (handCardPreview != null) {
             handCardPreview.setCard(cardId, name, exits);
-        } else {
         }
         addLog("Карта: " + name + " (ID: " + cardId + ")");
     }
@@ -788,12 +770,10 @@ public class GameUI {
         if (handCardPreview != null) {
             handCardPreview.rotateTo(currentRotation);
         }
-        addLog("🔄 Поворот: " + currentRotation + "°");
+        addLog("Поворот: " + currentRotation + "°");
     }
 
     public int getCurrentCardRotation() {
         return currentRotation;
     }
-
-
 }

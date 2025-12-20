@@ -227,4 +227,13 @@ public class GameState {
     public void resetDeckLimit() {
         cardsAvailable = Integer.MAX_VALUE;
     }
+
+    public void clearBoardExceptStart() {
+        Position startPos = new Position(0, 0);
+        Integer startCardId = placedCards.get(startPos);
+        placedCards.clear();
+        if (startCardId != null) {
+            placedCards.put(startPos, startCardId);
+        }
+    }
 }
